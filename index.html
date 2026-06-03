@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catálogo de Perfumes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@300;400;500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Variables ── */
+    :root {
+      --bg:        #0a0a0f;
+      --surface:   #111118;
+      --card:      #16161f;
+      --border:    #2a2a3a;
+      --gold:      #c9a84c;
+      --gold-light:#e8c97a;
+      --pink:      #e85d8a;
+      --violet:    #9b5de5;
+      --cyan:      #00d4ff;
+      --text:      #f0ece4;
+      --muted:     #7a7a8a;
+      --radius:    18px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Noise overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      text-align: center;
+      padding: 90px 20px 60px;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -120px; left: 50%;
+      transform: translateX(-50%);
+      width: 700px; height: 700px;
+      background: radial-gradient(ellipse, rgba(201,168,76,.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-tag {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 18px;
+      opacity: 0;
+      animation: fadeUp .7s .1s forwards;
+    }
+    .hero h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(42px, 8vw, 96px);
+      font-weight: 300;
+      line-height: 1.05;
+      letter-spacing: -1px;
+      opacity: 0;
+      animation: fadeUp .9s .25s forwards;
+    }
+    .hero h1 em {
+      font-style: italic;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      margin-top: 20px;
+      font-size: 13px;
+      font-weight: 300;
+      letter-spacing: 3px;
+      color: var(--muted);
+      opacity: 0;
+      animation: fadeUp .7s .45s forwards;
+    }
+
+    /* ── Filters ── */
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      padding: 20px 20px 40px;
+      position: relative;
+      z-index: 2;
+      opacity: 0;
+      animation: fadeUp .7s .6s forwards;
+    }
+    .filter-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 9px 22px;
+      border-radius: 100px;
+      cursor: pointer;
+      transition: all .25s;
+    }
+    .filter-btn:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+    .filter-btn.active {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: #0a0a0f;
+    }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 28px;
+      padding: 0 28px 80px;
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s, border-color .35s;
+      opacity: 0;
+      animation: cardIn .6s forwards;
+    }
+    .card:hover {
+      transform: translateY(-8px) scale(1.01);
+      border-color: var(--gold);
+      box-shadow: 0 24px 60px rgba(201,168,76,.15), 0 0 0 1px rgba(201,168,76,.08);
+    }
+    .card.hidden { display: none; }
+
+    /* stagger */
+    .card:nth-child(1)  { animation-delay: .05s; }
+    .card:nth-child(2)  { animation-delay: .1s; }
+    .card:nth-child(3)  { animation-delay: .15s; }
+    .card:nth-child(4)  { animation-delay: .2s; }
+    .card:nth-child(5)  { animation-delay: .25s; }
+    .card:nth-child(6)  { animation-delay: .3s; }
+    .card:nth-child(7)  { animation-delay: .35s; }
+    .card:nth-child(8)  { animation-delay: .4s; }
+    .card:nth-child(9)  { animation-delay: .45s; }
+    .card:nth-child(10) { animation-delay: .5s; }
+    .card:nth-child(11) { animation-delay: .55s; }
+    .card:nth-child(12) { animation-delay: .6s; }
+
+    /* Image gallery inside card */
+    .card-gallery {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      background: #0e0e16;
+    }
+    .card-gallery img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: opacity .5s, transform .6s cubic-bezier(.22,1,.36,1);
+    }
+    .card-gallery img.secondary { opacity: 0; }
+    .card:hover .card-gallery img.primary   { opacity: 0; transform: scale(1.05); }
+    .card:hover .card-gallery img.secondary { opacity: 1; transform: scale(1.05); }
+    .card-gallery img.only { object-fit: contain; padding: 12px; }
+
+    /* badge */
+    .badge {
+      position: absolute;
+      top: 14px; left: 14px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 100px;
+      z-index: 3;
+    }
+    .badge-oriental { background: rgba(201,168,76,.2); color: var(--gold); border: 1px solid rgba(201,168,76,.35); }
+    .badge-femenino  { background: rgba(232,93,138,.2); color: var(--pink); border: 1px solid rgba(232,93,138,.35); }
+    .badge-masculino { background: rgba(0,212,255,.15);  color: var(--cyan); border: 1px solid rgba(0,212,255,.3); }
+    .badge-unisex    { background: rgba(155,93,229,.2);  color: var(--violet); border: 1px solid rgba(155,93,229,.35); }
+
+    /* dot nav */
+    .dot-nav {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 5px;
+      z-index: 4;
+    }
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.25);
+      cursor: pointer;
+      transition: background .25s, transform .25s;
+    }
+    .dot.active { background: var(--gold); transform: scale(1.3); }
+
+    /* Info */
+    .card-info {
+      padding: 20px 22px 22px;
+    }
+    .card-brand {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 6px;
+    }
+    .card-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 1.2;
+      color: var(--text);
+    }
+    .card-variant {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--muted);
+      margin-top: 4px;
+      letter-spacing: 1px;
+    }
+    .card-notes {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .note-chip {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 100px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5,5,10,.88);
+      backdrop-filter: blur(14px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      max-width: 860px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      transform: scale(.93) translateY(20px);
+      transition: transform .35s cubic-bezier(.22,1,.36,1);
+    }
+    .modal-overlay.open .modal {
+      transform: scale(1) translateY(0);
+    }
+    @media (max-width: 620px) {
+      .modal { grid-template-columns: 1fr; }
+    }
+
+    /* Modal gallery */
+    .modal-gallery {
+      position: relative;
+      background: #0c0c14;
+      border-radius: 24px 0 0 24px;
+      overflow: hidden;
+      aspect-ratio: 1 / 1;
+    }
+    @media (max-width: 620px) {
+      .modal-gallery { border-radius: 24px 24px 0 0; aspect-ratio: 4/3; }
+    }
+    .modal-gallery img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 20px;
+      opacity: 0;
+      transition: opacity .4s;
+    }
+    .modal-gallery img.visible { opacity: 1; }
+
+    .modal-thumbs {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+    }
+    .modal-thumb {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: border-color .2s;
+      flex-shrink: 0;
+    }
+    .modal-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .modal-thumb.active { border-color: var(--gold); }
+
+    /* Modal info */
+    .modal-info {
+      padding: 36px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .modal-brand { font-size: 10px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--gold); }
+    .modal-name  { font-family: 'Cormorant Garamond', serif; font-size: 34px; font-weight: 600; line-height: 1.1; }
+    .modal-variant { font-size: 13px; color: var(--muted); letter-spacing: 1px; }
+    .modal-divider { height: 1px; background: var(--border); }
+    .modal-notes-title { font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+    .modal-notes { display: flex; flex-wrap: wrap; gap: 7px; }
+    .modal-note-chip {
+      font-size: 10px; font-weight: 500; letter-spacing: 1px;
+      padding: 5px 14px; border-radius: 100px;
+      background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    }
+    .modal-close {
+      position: absolute;
+      top: 18px; right: 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s, border-color .2s;
+      z-index: 10;
+    }
+    .modal-close:hover { background: var(--border); border-color: var(--gold); }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--border);
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ── Keyframes ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(22px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .grid { padding: 0 16px 60px; gap: 18px; grid-template-columns: repeat(2, 1fr); }
+      .card-name { font-size: 17px; }
+      .card-info { padding: 14px 16px 16px; }
+      .modal-info { padding: 24px 20px; }
+      .modal-name { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <p class="hero-tag">Colección Exclusiva</p>
+  <h1>Catálogo de<br /><em>Perfumes</em></h1>
+  <p class="hero-sub">Fragancias originales · Ediciones limitadas</p>
+</header>
+
+<!-- FILTERS -->
+<nav class="filters" id="filters">
+  <button class="filter-btn active" data-filter="all">Todos</button>
+  <button class="filter-btn" data-filter="oriental">Orientales</button>
+  <button class="filter-btn" data-filter="femenino">Femenino</button>
+  <button class="filter-btn" data-filter="masculino">Masculino</button>
+  <button class="filter-btn" data-filter="unisex">Unisex</button>
+</nav>
+
+<!-- GRID -->
+<main class="grid" id="grid"></main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-gallery" id="modalGallery">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div class="modal-thumbs" id="modalThumbs"></div>
+    </div>
+    <div class="modal-info" id="modalInfo"></div>
+  </div>
+</div>
+
+<footer>✦ CATÁLOGO DE PERFUMES ✦</footer>
+
+<script>
+// ─── PRODUCT DATA ───────────────────────────────────────────────────────────
+const products = [
+  {
+    id: 1,
+    brand: 'Lattafa',
+    name: "Bade'e Al Oud",
+    variant: 'Oud for Glory',
+    category: 'oriental',
+    badge: 'oriental',
+    images: [
+      '6C7396F9-509C-4143-813A-E051B2474D0B.jpeg',
+      'IMG/883C8118-E384-4A67-A157-94C04F597641.jpeg'
+    ],
+    notes: ['Oud', 'Amaderado', 'Ámbar', 'Almizcle']
+  },
+  {
+    id: 2,
+    brand: 'Al Haramain',
+    name: 'Amber Oud',
+    variant: 'Gold Edition',
+    category: 'unisex',
+    badge: 'unisex',
+    images: [
+      'IMG/01C09581-2397-4826-A2CA-5C49D5912768.jpeg'
+    ],
+    notes: ['Ámbar', 'Oud', 'Cálido', 'Especiado']
+  },
+  {
+    id: 3,
+    brand: 'Lattafa',
+    name: 'Yara',
+    variant: 'Candy · Fucsia',
+    category: 'femenino',
+    badge: 'femenino',
+    images: [
+      'IMG/2E0D0F88-D7BD-49DA-9586-F004B1F885AD.jpeg',
+      'IMG/740A9BB9-4C77-4C08-BA99-EB2B9BA3C64B.jpeg'
+    ],
+    notes: ['Floral', 'Afrutado', 'Dulce', 'Vainilla']
+  },
+  {
+    id: 4,
+    brand: 'Lattafa',
+    name: 'Yara',
+    variant: 'Pink · Rosa Suave',
+    category: 'femenino',
+    badge: 'femenino',
+    images: [
+      'IMG/C4570608-D646-4EAB-9352-B186D6350A1F.jpeg',
+      'IMG/A48DF4EB-1AF5-4815-8049-EE2CA28ADF16.jpeg'
+    ],
+    notes: ['Floral', 'Rosa', 'Polvoso', 'Almizcle']
+  },
+  {
+    id: 5,
+    brand: 'Lattafa',
+    name: 'Yara',
+    variant: 'Moi · Blanco & Dorado',
+    category: 'femenino',
+    badge: 'femenino',
+    images: [
+      'IMG/D0659A62-E941-4030-BC42-D2C6D291145A.jpeg'
+    ],
+    notes: ['Floral', 'Cítrico', 'Fresco', 'Amaderado']
+  },
+  {
+    id: 6,
+    brand: 'Lattafa',
+    name: 'Yara',
+    variant: 'Body Mist · Azul',
+    category: 'femenino',
+    badge: 'femenino',
+    images: [
+      'IMG/0AA4F921-9885-4F67-885A-DF41BD33FF6B.jpeg'
+    ],
+    notes: ['Fresco', 'Frutal', 'Ligero']
+  },
+  {
+    id: 7,
+    brand: 'Lattafa',
+    name: 'Fakhar',
+    variant: 'Negro & Plata',
+    category: 'unisex',
+    badge: 'unisex',
+    images: [
+      'IMG/84883AF7-6B78-4A12-A14A-F353820F5D46.jpeg',
+      'IMG/6932A81E-2F88-47BB-89BF-260B9A4DDED9.jpeg',
+      'IMG/D73052C9-E15F-425C-9EC4-3AA192011489.jpeg'
+    ],
+    notes: ['Aromático', 'Amaderado', 'Ámbar', 'Lavanda', 'Especiado']
+  },
+  {
+    id: 8,
+    brand: 'Guess',
+    name: 'Seductive Red',
+    variant: 'Women · EDT 75 ml',
+    category: 'femenino',
+    badge: 'femenino',
+    images: [
+      'IMG/11F94DF6-660F-4880-9671-7FF12EF6BF15.jpeg',
+      'IMG/6D265854-250C-4DEC-B398-85D2C49D18E6.jpeg'
+    ],
+    notes: ['Floral', 'Frutal', 'Sensual']
+  },
+  {
+    id: 9,
+    brand: 'Moschino',
+    name: 'Toy 2',
+    variant: 'Bubble Gum · EDT',
+    category: 'femenino',
+    badge: 'femenino',
+    images: [
+      'IMG/91E887DA-B421-4117-99A9-FAC24C41FC92.jpeg',
+      'IMG/7056FD56-2DE5-4C6D-8984-594242572925.jpeg'
+    ],
+    notes: ['Dulce', 'Floral', 'Bubble Gum', 'Rosa']
+  },
+  {
+    id: 10,
+    brand: 'Ariana Grande',
+    name: 'Cloud',
+    variant: 'EDT · Frasco Nube',
+    category: 'femenino',
+    badge: 'femenino',
+    images: [
+      'IMG/628A3674-E731-482C-8E82-604D94FD8962.jpeg'
+    ],
+    notes: ['Lavanda', 'Vainilla', 'Coco', 'Almizcle']
+  },
+  {
+    id: 11,
+    brand: 'Ariana Grande',
+    name: 'Cloud',
+    variant: 'Body Mist · 236 ml',
+    category: 'femenino',
+    badge: 'femenino',
+    images: [
+      'IMG/29B2992E-B5A1-4C2E-866C-070EE567C38F.jpeg',
+      'IMG/43ECE95F-6960-45F9-BACA-867BD93AE43C.jpeg'
+    ],
+    notes: ['Lavanda', 'Vainilla', 'Fresco', 'Ligero']
+  },
+  {
+    id: 12,
+    brand: 'Versace',
+    name: 'Eros',
+    variant: 'EDT 200 ml',
+    category: 'masculino',
+    badge: 'masculino',
+    images: [
+      'IMG/74D6A380-EFC0-4084-867F-F3BE785635D8.jpeg'
+    ],
+    notes: ['Menta', 'Vainilla', 'Madera', 'Tonka']
+  },
+  {
+    id: 13,
+    brand: 'Cacharel',
+    name: 'Amor Amor',
+    variant: 'EDT Clásico',
+    category: 'femenino',
+    badge: 'femenino',
+    images: [
+      'IMG/DFE03DF6-CA8B-4D20-95D3-8DF90F8F6400.jpeg'
+    ],
+    notes: ['Frutal', 'Floral', 'Almizcle', 'Cedro']
+  },
+  {
+    id: 14,
+    brand: 'Katy Perry',
+    name: 'Purr',
+    variant: 'EDP · Frasco Gato',
+    category: 'femenino',
+    badge: 'femenino',
+    images: [
+      'IMG/EBC773B9-661E-478C-9947-0ACA62BFE93C.jpeg'
+    ],
+    notes: ['Frutal', 'Bambú', 'Melocotón', 'Vainilla']
+  }
+];
+
+// ─── BADGE MAP ────────────────────────────────────────────────────────────────
+const badgeLabel = { oriental: 'Oriental', femenino: 'Femenino', masculino: 'Masculino', unisex: 'Unisex' };
+
+// ─── RENDER CARDS ─────────────────────────────────────────────────────────────
+const grid = document.getElementById('grid');
+
+products.forEach(p => {
+  const hasTwoImgs = p.images.length >= 2;
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.category = p.category;
+
+  // gallery
+  let galleryHTML = `<div class="card-gallery">`;
+  galleryHTML += `<span class="badge badge-${p.badge}">${badgeLabel[p.badge]}</span>`;
+  if (hasTwoImgs) {
+    galleryHTML += `<img src="${p.images[0]}" alt="${p.name}" class="primary" loading="lazy" />`;
+    galleryHTML += `<img src="${p.images[1]}" alt="${p.name} alt" class="secondary" loading="lazy" />`;
+  } else {
+    galleryHTML += `<img src="${p.images[0]}" alt="${p.name}" class="primary only" loading="lazy" />`;
+  }
+  if (p.images.length > 2) {
+    galleryHTML += `<div class="dot-nav">${p.images.map((_,i) => `<div class="dot ${i===0?'active':''}" data-idx="${i}"></div>`).join('')}</div>`;
+  }
+  galleryHTML += `</div>`;
+
+  // notes (max 3)
+  const topNotes = p.notes.slice(0, 3);
+  const notesHTML = topNotes.map(n => `<span class="note-chip">${n}</span>`).join('');
+
+  card.innerHTML = `
+    ${galleryHTML}
+    <div class="card-info">
+      <p class="card-brand">${p.brand}</p>
+      <p class="card-name">${p.name}</p>
+      <p class="card-variant">${p.variant}</p>
+      <div class="card-notes">${notesHTML}</div>
+    </div>
+  `;
+
+  card.addEventListener('click', () => openModal(p));
+  grid.appendChild(card);
+});
+
+// ─── FILTER ──────────────────────────────────────────────────────────────────
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filter = btn.dataset.filter;
+    document.querySelectorAll('.card').forEach(card => {
+      const show = filter === 'all' || card.dataset.category === filter;
+      card.classList.toggle('hidden', !show);
+    });
+  });
+});
+
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+const overlay     = document.getElementById('modalOverlay');
+const modalGallery = document.getElementById('modalGallery');
+const modalThumbs  = document.getElementById('modalThumbs');
+const modalInfo    = document.getElementById('modalInfo');
+const modalClose   = document.getElementById('modalClose');
+
+let currentImgIdx = 0;
+
+function openModal(p) {
+  currentImgIdx = 0;
+
+  // Build gallery images
+  modalGallery.querySelectorAll('img').forEach(el => el.remove());
+  p.images.forEach((src, i) => {
+    const img = document.createElement('img');
+    img.src = src; img.alt = p.name;
+    img.className = i === 0 ? 'visible' : '';
+    modalGallery.insertBefore(img, modalThumbs);
+  });
+
+  // Build thumbs
+  modalThumbs.innerHTML = '';
+  if (p.images.length > 1) {
+    p.images.forEach((src, i) => {
+      const thumb = document.createElement('div');
+      thumb.className = `modal-thumb ${i===0?'active':''}`;
+      thumb.innerHTML = `<img src="${src}" alt="" />`;
+      thumb.addEventListener('click', e => { e.stopPropagation(); setModalImg(i, p.images.length); });
+      modalThumbs.appendChild(thumb);
+    });
+    modalThumbs.style.display = 'flex';
+  } else {
+    modalThumbs.style.display = 'none';
+  }
+
+  // Info
+  const notesHTML = p.notes.map(n => `<span class="modal-note-chip">${n}</span>`).join('');
+  modalInfo.innerHTML = `
+    <p class="modal-brand">${p.brand}</p>
+    <p class="modal-name">${p.name}</p>
+    <p class="modal-variant">${p.variant}</p>
+    <div class="modal-divider"></div>
+    <p class="modal-notes-title">Acordes principales</p>
+    <div class="modal-notes">${notesHTML}</div>
+  `;
+
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function setModalImg(idx, total) {
+  const imgs   = modalGallery.querySelectorAll('img');
+  const thumbs = modalThumbs.querySelectorAll('.modal-thumb');
+  imgs.forEach((img, i)   => img.classList.toggle('visible', i === idx));
+  thumbs.forEach((t, i)   => t.classList.toggle('active', i === idx));
+  currentImgIdx = idx;
+}
+
+function closeModal() {
+  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+modalClose.addEventListener('click', closeModal);
+overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+</body>
+</html>
